@@ -37,22 +37,11 @@ body {
     align-items: center;
     position: relative;
     min-height: 0;
+    /* Permet au canvas 3D de ne pas déborder */
+    overflow: hidden; 
 }
 
-#dragon {
-    background-image: url('assets/dragon_spritesheet.png');
-    background-repeat: no-repeat;
-    transform-origin: bottom center;
-    animation: float 3s ease-in-out infinite;
-    /* On ajoute un filtre pour pouvoir le modifier via JS */
-    filter: none;
-    transition: filter 0.5s ease;
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-15px); }
-}
+/* Les styles pour #dragon et @keyframes float ont été supprimés */
 
 /* Conteneur de l'UI */
 #ui-container {
@@ -79,7 +68,7 @@ body {
 .action-button:active img { transform: scale(0.9); }
 
 /* Bulle de pensée */
-#thought-bubble { position: absolute; bottom: 68%; background-color: rgba(255, 255, 255, 0.95); padding: 12px 20px; border-radius: 25px; border-bottom-left-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); font-size: 18px; color: #444; max-width: 80%; text-align: center; opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; pointer-events: none; }
+#thought-bubble { position: absolute; top: 10%; /* Ajusté pour la vue 3D */ background-color: rgba(255, 255, 255, 0.95); padding: 12px 20px; border-radius: 25px; border-bottom-left-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); font-size: 18px; color: #444; max-width: 80%; text-align: center; opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; pointer-events: none; z-index: 5; /* S'assure qu'elle est au-dessus du canvas */ }
 #thought-bubble.visible { opacity: 1; transform: translateY(0); }
 .hidden { display: none !important; }
 
@@ -89,7 +78,7 @@ body {
 .secondary-button:hover { background-color: rgba(255, 255, 255, 0.9); }
 .secondary-button:active { transform: scale(0.95); }
 
-/* --- AJOUTÉ : Styles pour le Modal de Profil --- */
+/* --- Styles pour le Modal de Profil --- */
 .profile-button {
     position: absolute;
     top: -25px; /* Positionné à moitié sur l'UI */

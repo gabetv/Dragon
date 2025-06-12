@@ -1,26 +1,58 @@
-// dragon_ai.js - Le Cerveau du Dragon (avec XP, Niveaux et Couleur)
+// dragon_ai.js - Le Cerveau du Dragon (mis à jour avec un cerveau intelligent)
+
+import DragonBrain from './dragon_brain.js'; // --- AJOUT ---
 
 export default class DragonAI {
     constructor() {
-        // Stats de base
+        // Stats de base (inchangées)
         this.hunger = 80.0;
         this.happiness = 80.0;
         this.state = "happy";
         this.actionTimer = 0;
 
-        // Système de Progression
+        // Système de Progression (inchangé)
         this.level = 1;
         this.xp = 0;
         this.xpToNextLevel = 100;
         this.skills = [];
 
-        // Personnalisation et Connaissances
+        // Personnalisation et Connaissances (inchangées)
         this.name = "Drago";
         this.knowledge = {};
-        this.color = "default"; // --- AJOUTÉ : Couleur par défaut ---
+        this.color = "default";
         
+        // --- AJOUT : Le dragon a maintenant un cerveau décisionnel ! ---
+        this.brain = new DragonBrain(this);
+
         this.load();
     }
+
+    // --- Les fonctions de base sont maintenant connectées au cerveau ---
+
+    feed() {
+        this.hunger = Math.min(100.0, this.hunger + 25);
+        this.happiness = Math.min(100.0, this.happiness + (this.hasSkill("Gourmand Agile") ? 10 : 5));
+        this.setActionState("eating", 3);
+        // Au lieu d'une réponse fixe, on demande au cerveau
+        return this.brain.getResponse('feed');
+    }
+
+    play() {
+        this.happiness = Math.min(100.0, this.happiness + (this.hasSkill("Maître du Jeu") ? 30 : 20));
+        this.setActionState("playing", 4);
+        // Au lieu d'une réponse fixe, on demande au cerveau
+        return this.brain.getResponse('play');
+    }
+
+    pet() {
+        if (this.actionTimer > 0 || this.state === 'sad') return null;
+        this.happiness = Math.min(100.0, this.happiness + 3);
+        this.setActionState("in_love", 2);
+        // Au lieu de rien, on demande une réponse au cerveau
+        return this.brain.getResponse('pet');
+    }
+    
+    // --- Les fonctions suivantes sont inchangées ---
 
     gainXP(amount) {
         this.xp += amount;
@@ -42,7 +74,6 @@ export default class DragonAI {
     }
     
     hasSkill(skillName) {
-        // Recherche si une compétence est présente (ex: 'Apprentissage Rapide')
         return this.skills.includes(skillName);
     }
 
@@ -75,26 +106,6 @@ export default class DragonAI {
         this.state = newState;
         this.actionTimer = duration;
     }
-
-    feed() {
-        this.hunger = Math.min(100.0, this.hunger + 25);
-        this.happiness = Math.min(100.0, this.happiness + (this.hasSkill("Gourmand Agile") ? 10 : 5));
-        this.setActionState("eating", 3);
-        return "Miam !";
-    }
-
-    play() {
-        this.happiness = Math.min(100.0, this.happiness + (this.hasSkill("Maître du Jeu") ? 30 : 20));
-        this.setActionState("playing", 4);
-        return "Hihi, c'est amusant !";
-    }
-
-    pet() {
-        if (this.actionTimer > 0 || this.state === 'sad') return null;
-        this.happiness = Math.min(100.0, this.happiness + 3);
-        this.setActionState("in_love", 2);
-        return null;
-    }
     
     save() {
         const data = {
@@ -106,10 +117,9 @@ export default class DragonAI {
             skills: this.skills,
             name: this.name,
             knowledge: this.knowledge,
-            color: this.color // --- AJOUTÉ ---
+            color: this.color
         };
         localStorage.setItem('petSaveData', JSON.stringify(data));
-        // console.log("Données du dragon sauvegardées."); // Optionnel, pour le débogage
     }
 
     load() {
@@ -124,7 +134,7 @@ export default class DragonAI {
             this.skills = s.skills ?? [];
             this.name = s.name ?? "Drago";
             this.knowledge = s.knowledge ?? {};
-            this.color = s.color ?? "default"; // --- AJOUTÉ ---
+            this.color = s.color ?? "default";
             console.log("Données du dragon chargées.");
         }
     }
