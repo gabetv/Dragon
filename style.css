@@ -27,7 +27,6 @@ body {
     background-image: url('assets/background.png');
     background-size: cover;
     background-position: center;
-    /* Transition douce pour le changement de fond */
     transition: background-image 1.5s ease-in-out;
 }
 
@@ -79,66 +78,18 @@ body {
 .secondary-button:active { transform: scale(0.95); }
 
 /* --- Styles pour l'UI du cycle jour/nuit et les icônes en CSS --- */
-#day-night-cycle-ui {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    display: flex;
-    align-items: center;
-    gap: 8px; /* Espace entre le soleil et la lune */
-    z-index: 5;
-}
-
-.cycle-icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    position: relative;
-    transition: all 0.8s ease-in-out;
-    cursor: pointer; /* Rend les icônes cliquables */
-}
-
-#sun-icon {
-    background: radial-gradient(circle, #FFFDE7 0%, #FFD54F 100%);
-    box-shadow: 0 0 15px #FFD54F, 0 0 5px #FFFDE7 inset;
-}
-
-#moon-icon {
-    background-color: #E0E0E0;
-    box-shadow: 0 0 15px #E0E0E0, 0 0 8px white inset;
-    overflow: hidden; /* Cache la partie du pseudo-élément qui dépasse */
-}
-
-/* On crée le croissant de lune en superposant un cercle plus sombre */
-#moon-icon::before {
-    content: '';
-    position: absolute;
-    top: -5px;
-    left: -10px;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background-color: transparent; 
-    box-shadow: 0 0 10px #2c3e50; /* Ombre du croissant */
-}
-
-.inactive-icon {
-    opacity: 0.25;
-    box-shadow: none !important;
-    transform: scale(0.8);
-}
+#day-night-cycle-ui { position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 8px; z-index: 5; }
+.cycle-icon { width: 30px; height: 30px; border-radius: 50%; position: relative; transition: all 0.8s ease-in-out; cursor: pointer; }
+#sun-icon { background: radial-gradient(circle, #FFFDE7 0%, #FFD54F 100%); box-shadow: 0 0 15px #FFD54F, 0 0 5px #FFFDE7 inset; }
+#moon-icon { background-color: #E0E0E0; box-shadow: 0 0 15px #E0E0E0, 0 0 8px white inset; overflow: hidden; }
+#moon-icon::before { content: ''; position: absolute; top: -5px; left: -10px; width: 100%; height: 100%; border-radius: 50%; background-color: transparent; box-shadow: 0 0 10px #2c3e50; }
+.inactive-icon { opacity: 0.25; box-shadow: none !important; transform: scale(0.8); }
 
 /* --- Classe pour le thème de Nuit --- */
-#game-container.night-theme #ui-container {
-    background-color: rgba(18, 25, 41, 0.4); /* Fond de l'UI plus sombre et bleuté */
-    border-top-color: rgba(135, 166, 219, 0.3);
-}
-/* On utilise la classe pour changer le fond, via le conteneur principal */
-#game-container.night-theme {
-    background-image: url('assets/background_night.png');
-}
+#game-container.night-theme #ui-container { background-color: rgba(18, 25, 41, 0.4); border-top-color: rgba(135, 166, 219, 0.3); }
+#game-container.night-theme { background-image: url('assets/background_night.png'); }
 
-/* --- Styles du Modal (inchangés) --- */
+/* --- Styles du Modal --- */
 .profile-button { position: absolute; top: -25px; right: 20px; background-color: #f39c12; color: white; border: 3px solid white; border-radius: 50%; width: 50px; height: 50px; font-size: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; z-index: 10; }
 .modal-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 100; opacity: 0; transition: opacity 0.3s ease; }
 .modal-container:not(.hidden) { opacity: 1; }
@@ -158,8 +109,31 @@ body {
 .color-btn[data-color="purple"] { background-color: #9b59b6; }
 #modal-close-btn { margin-top: 20px; width: 100%; }
 
+/* --- AJOUT : Styles pour la liste des questions dans le Modal --- */
+#modal-questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Espace entre les questions */
+    margin: 20px 0;
+    max-height: 50vh; /* Empêche la liste d'être trop longue sur les petits écrans */
+    overflow-y: auto; /* Ajoute une barre de défilement si nécessaire */
+}
+.question-item {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    color: #333;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+.question-item:hover { background-color: #e0e0e0; }
+.question-item:active { transform: scale(0.98); }
 
-/* --- Styles responsives (inchangés) --- */
+
+/* --- Styles responsives --- */
 @media (max-height: 700px) {
     #ui-container { padding: 10px 20px; }
     .stat-bar { margin-bottom: 8px; }

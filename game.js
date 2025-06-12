@@ -1,6 +1,7 @@
 // game.js - Version Finale Complète et Corrigée
 
 import DragonAI from './dragon_ai.js';
+import { predefinedQuestions } from './personality.js';
 import * as THREE from './js/three.module.js';
 import { OBJLoader } from './js/OBJLoader.js';
 
@@ -28,9 +29,38 @@ document.addEventListener('DOMContentLoaded', () => {
         colorPicker: document.getElementById('color-picker'),
         sunIcon: document.getElementById('sun-icon'),
         moonIcon: document.getElementById('moon-icon'),
+        askModal: document.getElementById('ask-modal'),
+        askModalCloseBtn: document.getElementById('ask-modal-close-btn'),
+        questionsList: document.getElementById('modal-questions-list'),
     };
 
     let thoughtTimeout;
+
+    function createZParticleCanvas() {
+        const canvas = document.createElement('canvas');
+        const size = 64;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.font = `bold ${size * 0.75}px Fredoka, sans-serif`;
+        ctx.fillStyle = 'rgba(240, 248, 255, 0.9)';
+        ctx.shadowColor = 'rgba(120, 120, 255, 0.7)';
+        ctx.shadowBlur = 8;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Z', size / 2, size / 2 + 5);
+        return canvas;
+    }
+
+    function playSound(soundId) {
+        try {
+            const sound = document.getElementById(soundId);
+            sound.currentTime = 0;
+            sound.play();
+        } catch (e) {
+            console.warn(`Impossible de jouer le son : ${soundId}`, e);
+        }
+    }
 
     function speak(text) {
         if (!('speechSynthesis' in window)) { return; }
@@ -62,14 +92,19 @@ document.addEventListener('DOMContentLoaded', () => {
         creature: new DragonAI(),
         clock: new THREE.Clock(),
         proactiveThoughtTimer: 15.0,
-        isNight: false, // On commence de jour par défaut
-        threeD: { scene: null, camera: null, renderer: null, dragonModel: null, ambientLight: null, directionalLight: null },
+        isNight: false,
+        threeD: { 
+            scene: null, camera: null, renderer: null, dragonModel: null, ambientLight: null, directionalLight: null,
+            sleepParticles: [],
+            sleepParticleMaterial: null,
+            sleepParticleTimer: 0
+        },
         
         init() {
             this.initThree();
             this.loadDragonModel();
             this.bindEvents();
-            this.updateWorldAppearance(); // Applique l'état initial (jour)
+            this.updateWorldAppearance();
             setInterval(() => this.creature.save(), 5000);
             this.gameLoop();
         },
@@ -84,6 +119,15 @@ document.addEventListener('DOMContentLoaded', () => {
             this.threeD.camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
             this.threeD.camera.position.z = 15;
             this.threeD.camera.position.y = 2;
+
+            const particleCanvas = createZParticleCanvas();
+            const particleTexture = new THREE.CanvasTexture(particleCanvas);
+            this.threeD.sleepParticleMaterial = new THREE.SpriteMaterial({ 
+                map: particleTexture,
+                transparent: true,
+                depthTest: false
+            });
+
             this.threeD.ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
             this.threeD.scene.add(this.threeD.ambientLight);
             this.threeD.directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
@@ -116,12 +160,13 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         bindEvents() {
-            elements.feedBtn.onclick = () => this.handleAction(this.creature.feed(), this.creature.gainXP(10));
-            elements.playBtn.onclick = () => this.handleAction(this.creature.play(), this.creature.gainXP(15));
-            this.threeD.renderer.domElement.onclick = () => this.handleAction(this.creature.pet(), this.creature.gainXP(5));
+            elements.feedBtn.onclick = () => { playSound('sfx-eat'); this.handleAction(this.creature.feed(), this.creature.gainXP(10)); };
+            elements.playBtn.onclick = () => { playSound('sfx-play'); this.handleAction(this.creature.play(), this.creature.gainXP(15)); };
+            this.threeD.renderer.domElement.onclick = () => { playSound('sfx-click'); this.handleAction(this.creature.pet(), this.creature.gainXP(5)); };
             elements.renameBtn.onclick = () => this.renameCreature();
             elements.teachBtn.onclick = () => this.teachCreature();
-            elements.askBtn.onclick = () => this.askCreature();
+            elements.askBtn.onclick = () => this.openAskModal();
+            elements.askModalCloseBtn.onclick = () => this.closeAskModal();
             elements.profileBtn.onclick = () => this.openProfile();
             elements.modalCloseBtn.onclick = () => this.closeProfile();
             elements.colorPicker.onclick = (e) => { if (e.target.classList.contains('color-btn')) { this.changeDragonColor(e.target.dataset.color); } };
@@ -129,25 +174,126 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.sunIcon.onclick = () => { if (this.isNight) { this.isNight = false; this.updateWorldAppearance(); } };
             elements.moonIcon.onclick = () => { if (!this.isNight) { this.isNight = true; this.updateWorldAppearance(); } };
         },
+        
+        spawnSleepParticle() {
+            if (!this.threeD.dragonModel) return;
+            const particle = new THREE.Sprite(this.threeD.sleepParticleMaterial.clone());
+            const startPosition = this.threeD.dragonModel.position.clone();
+            particle.position.x = startPosition.x + (Math.random() - 0.5) * 1.5;
+            particle.position.y = startPosition.y + 3;
+            particle.position.z = startPosition.z + (Math.random() - 0.5) * 1.5;
+            const scale = 1 + Math.random() * 0.5;
+            particle.scale.set(scale, scale, 1);
+            particle.userData = { lifetime: 3.0 + Math.random() * 2, velocity: new THREE.Vector3(0, 0.4, 0) };
+            this.threeD.scene.add(particle);
+            this.threeD.sleepParticles.push(particle);
+        },
+        updateSleepParticles(dt) {
+            for (let i = this.threeD.sleepParticles.length - 1; i >= 0; i--) {
+                const particle = this.threeD.sleepParticles[i];
+                particle.userData.lifetime -= dt;
+                if (particle.userData.lifetime <= 0) {
+                    this.threeD.scene.remove(particle);
+                    this.threeD.sleepParticles.splice(i, 1);
+                } else {
+                    particle.position.add(particle.userData.velocity.clone().multiplyScalar(dt));
+                    if (particle.userData.lifetime < 1.0) { particle.material.opacity = particle.userData.lifetime; }
+                }
+            }
+        },
+        clearSleepParticles() {
+            this.threeD.sleepParticles.forEach(p => this.threeD.scene.remove(p));
+            this.threeD.sleepParticles = [];
+        },
 
         handleAction(thought, levelUpInfo) { showThought(thought, 2); if (levelUpInfo) this.announceLevelUp(levelUpInfo); },
         announceLevelUp({ message, skill }) { setTimeout(() => { showThought(message, 3); if (skill) { setTimeout(() => { showThought(skill, 5); }, 3100); } }, 500); },
         openProfile() { elements.modalName.textContent = this.creature.name; elements.modalLevel.textContent = this.creature.level; const xpPercent = (this.creature.xp / this.creature.xpToNextLevel) * 100; elements.modalXpBar.style.width = `${xpPercent}%`; elements.modalXpText.textContent = `${Math.floor(this.creature.xp)} / ${this.creature.xpToNextLevel} XP`; elements.modalSkills.innerHTML = ''; if (this.creature.skills.length === 0) { elements.modalSkills.innerHTML = '<li>Aucune pour le moment</li>'; } else { this.creature.skills.forEach(skillName => { const li = document.createElement('li'); li.textContent = skillName; elements.modalSkills.appendChild(li); }); } elements.modal.classList.remove('hidden'); },
         closeProfile() { elements.modal.classList.add('hidden'); },
+        
+        // --- FONCTIONS CORRIGÉES ---
+        openAskModal() {
+            elements.questionsList.innerHTML = '';
+            predefinedQuestions.forEach(q => {
+                if (this.creature.level >= q.levelRequired) {
+                    const questionDiv = document.createElement('div');
+                    questionDiv.classList.add('question-item');
+                    questionDiv.textContent = q.text;
+                    questionDiv.onclick = () => {
+                        const questionToProcess = q.key || q.text;
+                        const answer = this.creature.brain.processQuestion(questionToProcess);
+                        showThought(answer, 5);
+                        this.closeAskModal();
+                    };
+                    elements.questionsList.appendChild(questionDiv);
+                }
+            });
+            elements.askModal.classList.remove('hidden');
+        },
+        closeAskModal() {
+            elements.askModal.classList.add('hidden');
+        },
+
         changeDragonColor(color) { this.creature.color = color; if (!this.isNight) { this.updateDragonColor(); } },
         updateDragonColor() { if (!this.threeD.dragonModel) return; let tintColor = 0xffffff; if (this.creature.color === 'green') tintColor = 0x90ee90; else if (this.creature.color === 'blue') tintColor = 0xadd8e6; else if (this.creature.color === 'purple') tintColor = 0xdda0dd; this.threeD.dragonModel.traverse((child) => { if (child.isMesh) { child.material.color.setHex(tintColor); } }); },
         renameCreature() { const newName = prompt(`Comment veux-tu m'appeler ?`, this.creature.name); if (newName && newName.trim()) { this.creature.name = newName.trim(); showThought(`Super ! Appelle-moi ${this.creature.name} !`, 4); } },
         teachCreature() { const key = prompt("Que veux-tu m'apprendre ?"); if (!key) return; const value = prompt(`D'accord, et quelle est la réponse à "${key}" ?`); if (!value) return; this.creature.knowledge[key.trim().toLowerCase()] = value.trim(); const thought = this.creature.brain.getResponse('learn'); const xpGain = this.creature.gainXP(this.creature.hasSkill("Apprentissage Rapide") ? 30 : 20); this.handleAction(thought, xpGain); },
-        askCreature() { const q = prompt("Que veux-tu me demander ?"); if (!q) return; const answer = this.creature.brain.processQuestion(q); showThought(answer, 5); },
         onWindowResize() { const world = elements.world; this.threeD.camera.aspect = world.clientWidth / world.clientHeight; this.threeD.camera.updateProjectionMatrix(); this.threeD.renderer.setSize(world.clientWidth, world.clientHeight); },
 
         gameLoop() {
             requestAnimationFrame(this.gameLoop.bind(this));
             const deltaTime = this.clock.getDelta();
+            
+            const oldState = this.creature.state;
             this.creature.update(deltaTime);
+            const newState = this.creature.state;
+
+            if (newState === 'sleeping' && oldState !== 'sleeping') { showThought("Zzz... Bonne nuit...", 4, false); }
+            if (newState !== 'sleeping' && oldState === 'sleeping') { showThought(this.creature.brain.getResponse('wakeup'), 3); }
+
             this.proactiveThoughtTimer -= deltaTime;
-            if (this.proactiveThoughtTimer <= 0) { const thought = this.creature.brain.think(); if (thought) { showThought(thought, 4, false); } this.proactiveThoughtTimer = 20 + Math.random() * 15; }
-            if (this.threeD.dragonModel) { const elapsedTime = this.clock.getElapsedTime(); this.threeD.dragonModel.position.y = Math.sin(elapsedTime * 1.5) * 0.2; if (this.creature.state === 'playing') { this.threeD.dragonModel.rotation.y += deltaTime * 2; } else { this.threeD.dragonModel.rotation.y = THREE.MathUtils.lerp(this.threeD.dragonModel.rotation.y, 0, deltaTime * 3); } }
+            if (this.proactiveThoughtTimer <= 0) { 
+                const thought = this.creature.brain.think(); 
+                if (thought) { showThought(thought, 4, false); } 
+                this.proactiveThoughtTimer = 20 + Math.random() * 15; 
+            }
+            
+            if (this.threeD.dragonModel) { 
+                const elapsedTime = this.clock.getElapsedTime(); 
+                if (this.creature.state === 'sleeping') {
+                    this.threeD.dragonModel.position.y = Math.sin(elapsedTime * 0.5) * 0.1;
+                    this.threeD.dragonModel.rotation.y = THREE.MathUtils.lerp(this.threeD.dragonModel.rotation.y, 0, deltaTime * 3);
+                    this.threeD.dragonModel.rotation.z = THREE.MathUtils.lerp(this.threeD.dragonModel.rotation.z, Math.PI * 0.05, deltaTime);
+                } else if (this.creature.state === 'playing') {
+                    this.threeD.dragonModel.rotation.y += deltaTime * 2;
+                    this.threeD.dragonModel.position.y = Math.sin(elapsedTime * 1.5) * 0.2;
+                    this.threeD.dragonModel.rotation.z = THREE.MathUtils.lerp(this.threeD.dragonModel.rotation.z, 0, deltaTime);
+                } else if (this.creature.state === 'sad') {
+                    this.threeD.dragonModel.position.y = THREE.MathUtils.lerp(this.threeD.dragonModel.position.y, -0.2, deltaTime);
+                    this.threeD.dragonModel.rotation.z = THREE.MathUtils.lerp(this.threeD.dragonModel.rotation.z, 0, deltaTime);
+                } else {
+                    this.threeD.dragonModel.position.y = Math.sin(elapsedTime * 1.5) * 0.2;
+                    this.threeD.dragonModel.rotation.y = THREE.MathUtils.lerp(this.threeD.dragonModel.rotation.y, 0, deltaTime * 3);
+                    this.threeD.dragonModel.rotation.z = THREE.MathUtils.lerp(this.threeD.dragonModel.rotation.z, 0, deltaTime);
+                }
+            }
+
+            if (this.creature.state === 'sleeping') {
+                this.threeD.sleepParticleTimer -= deltaTime;
+                if (this.threeD.sleepParticleTimer <= 0) {
+                    this.spawnSleepParticle();
+                    this.threeD.sleepParticleTimer = 1.2;
+                }
+            } else {
+                if (this.threeD.sleepParticles.length > 0) { this.clearSleepParticles(); }
+            }
+            this.updateSleepParticles(deltaTime);
+            
+            const buttonsDisabled = this.creature.state === 'sleeping';
+            elements.feedBtn.disabled = buttonsDisabled;
+            elements.playBtn.disabled = buttonsDisabled;
+            elements.teachBtn.disabled = buttonsDisabled;
+
             this.renderUI();
             if (this.threeD.renderer && this.threeD.scene && this.threeD.camera) { this.threeD.renderer.render(this.threeD.scene, this.threeD.camera); }
         },

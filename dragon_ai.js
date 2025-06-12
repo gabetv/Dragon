@@ -1,6 +1,6 @@
 // dragon_ai.js - Le Cerveau du Dragon (mis à jour avec un cerveau intelligent)
 
-import DragonBrain from './dragon_brain.js'; // --- AJOUT ---
+import DragonBrain from './dragon_brain.js';
 
 export default class DragonAI {
     constructor() {
@@ -77,7 +77,23 @@ export default class DragonAI {
         return this.skills.includes(skillName);
     }
 
+    // --- FONCTION UPDATE FORTEMENT MODIFIÉE ---
     update(dt) {
+        // Si le dragon dort, il régénère ses stats au lieu de les perdre
+        if (this.state === 'sleeping') {
+            this.hunger = Math.min(100.0, this.hunger + dt * 0.5); // Régénère lentement la faim
+            this.happiness = Math.min(100.0, this.happiness + dt * 1.0); // Régénère le bonheur plus vite
+            
+            // On le réveille si le jour se lève
+            const hour = new Date().getHours();
+            const isDayTime = (hour >= 6 && hour < 22);
+            if (isDayTime) {
+                this.state = 'happy';
+            }
+            return; // On arrête l'update ici pendant le sommeil
+        }
+        
+        // La perte de stats ne se produit que s'il est éveillé
         this.hunger -= dt * 1.5;
         this.happiness -= dt * 1.0;
         if (this.hunger < 0) this.hunger = 0;
@@ -91,10 +107,11 @@ export default class DragonAI {
         const hour = new Date().getHours();
         const isNightTime = (hour < 6 || hour >= 22);
 
-        if (this.hunger < 30 || this.happiness < 30) {
+        // Logique d'état modifiée pour le sommeil automatique
+        if (isNightTime && this.hunger > 70 && this.happiness > 70 && this.state !== 'sleeping') {
+            this.setActionState("sleeping", 9999); // Il dort jusqu'à ce qu'on le réveille le matin
+        } else if (this.hunger < 30 || this.happiness < 30) {
             this.state = "sad";
-        } else if (isNightTime && this.hunger > 80 && this.happiness > 80) {
-            this.state = "sleeping";
         } else if (this.happiness > 95) {
             this.state = "in_love";
         } else {

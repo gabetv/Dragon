@@ -41,9 +41,21 @@ export const responses = {
         "Je m'en souviendrai.",
         "Noté ! J'ai appris quelque chose de nouveau."
     ],
-    // Quand il se réveille (pour plus tard)
+    // Quand il se réveille
     wakeup: [
         "J'ai bien dormi !",
-        "Bonjour ! C'est une belle journée."
+        "Bonjour ! C'est une belle journée.",
+        "*baille*... C'est déjà le matin ?",
+        "Prêt pour une nouvelle journée d'aventures !"
     ]
 };
+
+// --- AJOUT : Liste des questions prédéfinies ---
+export const predefinedQuestions = [
+    { text: "Comment tu t'appelles ?", levelRequired: 1 },
+    { text: "Quel est ton niveau ?", levelRequired: 1 },
+    { text: "Ça va ?", levelRequired: 1 },
+    { text: "Quelle heure est-il ?", levelRequired: 2 },
+    { text: "Quelle est ta couleur préférée ?", levelRequired: 3, key: "couleur préférée" },
+    { text: "Quel est ton plat préféré ?", levelRequired: 4, key: "plat préféré" }
+];

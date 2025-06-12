@@ -32,16 +32,26 @@
         </div>
     </div>
 
+    <!-- FENÊTRE MODALE DES QUESTIONS (cachée par défaut) -->
+    <!-- C'est probablement ce bloc qui manquait et causait l'erreur -->
+    <div id="ask-modal" class="modal-container hidden">
+        <div class="modal-content">
+            <h2>Poser une question</h2>
+            <div id="modal-questions-list">
+                <!-- La liste des questions sera générée par JavaScript -->
+            </div>
+            <button id="ask-modal-close-btn" class="secondary-button">Fermer</button>
+        </div>
+    </div>
+
+
     <!-- CONTENEur principal du jeu -->
     <div id="game-container">
         <div id="creature-world">
-            
-            <!-- MODIFIÉ : On utilise des divs pour les icônes qui seront stylées en CSS -->
             <div id="day-night-cycle-ui">
                 <div id="sun-icon" class="cycle-icon"></div>
                 <div id="moon-icon" class="cycle-icon"></div>
             </div>
-            
             <div id="thought-bubble" class="hidden"></div>
         </div>
 
@@ -77,6 +87,11 @@
             <button id="btn-profile" class="profile-button">Profil</button>
         </div>
     </div>
+    
+    <!-- Éléments audio pour les effets sonores (vides, mais prêts à être utilisés) -->
+    <audio id="sfx-eat" src="assets/sfx/eat.mp3" preload="auto"></audio>
+    <audio id="sfx-play" src="assets/sfx/play.mp3" preload="auto"></audio>
+    <audio id="sfx-click" src="assets/sfx/click.mp3" preload="auto"></audio>
     
     <!-- On charge le script comme un module -->
     <script src="game.js" type="module"></script>
