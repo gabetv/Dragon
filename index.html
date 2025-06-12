@@ -32,10 +32,16 @@
         </div>
     </div>
 
-    <!-- CONTENEUR PRINCIPAL DU JEU -->
+    <!-- CONTENEur principal du jeu -->
     <div id="game-container">
         <div id="creature-world">
-            <!-- La div #dragon a été supprimée. Three.js créera un canvas ici. -->
+            
+            <!-- MODIFIÉ : On utilise des divs pour les icônes qui seront stylées en CSS -->
+            <div id="day-night-cycle-ui">
+                <div id="sun-icon" class="cycle-icon"></div>
+                <div id="moon-icon" class="cycle-icon"></div>
+            </div>
+            
             <div id="thought-bubble" class="hidden"></div>
         </div>
 

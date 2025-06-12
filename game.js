@@ -1,4 +1,4 @@
-// game.js - Version mise à jour pour l'IA avancée
+// game.js - Version Finale Complète et Corrigée
 
 import DragonAI from './dragon_ai.js';
 import * as THREE from './js/three.module.js';
@@ -7,6 +7,7 @@ import { OBJLoader } from './js/OBJLoader.js';
 document.addEventListener('DOMContentLoaded', () => {
 
     const elements = {
+        gameContainer: document.getElementById('game-container'),
         world: document.getElementById('creature-world'),
         hungerBar: document.getElementById('hunger-bar-fill'),
         happyBar: document.getElementById('happiness-bar-fill'),
@@ -24,7 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
         modalXpBar: document.getElementById('modal-xp-bar-fill'),
         modalXpText: document.getElementById('modal-xp-text'),
         modalSkills: document.getElementById('modal-skills-list'),
-        colorPicker: document.getElementById('color-picker')
+        colorPicker: document.getElementById('color-picker'),
+        sunIcon: document.getElementById('sun-icon'),
+        moonIcon: document.getElementById('moon-icon'),
     };
 
     let thoughtTimeout;
@@ -42,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showThought(message, duration = 3, shouldSpeak = true) {
         if (!message) return;
-
         clearTimeout(thoughtTimeout);
         elements.bubble.textContent = message;
         elements.bubble.classList.remove('hidden');
@@ -51,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
         thoughtTimeout = setTimeout(() => {
             elements.bubble.classList.remove('visible');
         }, duration * 1000);
-
         if (shouldSpeak) {
             speak(message);
         }
@@ -59,26 +60,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const game = {
         creature: new DragonAI(),
-        lastTime: 0,
         clock: new THREE.Clock(),
-        // --- NOUVEAU : Timer pour les pensées proactives ---
-        proactiveThoughtTimer: 15.0, // Le dragon pensera pour la première fois après 15s
-
-        threeD: {
-            scene: null,
-            camera: null,
-            renderer: null,
-            dragonModel: null,
-            ambientLight: null,
-            directionalLight: null
-        },
+        proactiveThoughtTimer: 15.0,
+        isNight: false, // On commence de jour par défaut
+        threeD: { scene: null, camera: null, renderer: null, dragonModel: null, ambientLight: null, directionalLight: null },
         
         init() {
             this.initThree();
             this.loadDragonModel();
             this.bindEvents();
+            this.updateWorldAppearance(); // Applique l'état initial (jour)
             setInterval(() => this.creature.save(), 5000);
-            this.lastTime = performance.now();
             this.gameLoop();
         },
 
@@ -108,15 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const emissiveMap = textureLoader.load('assets/texture_pbr.png');
             colorMap.colorSpace = THREE.SRGBColorSpace;
             emissiveMap.colorSpace = THREE.SRGBColorSpace;
-            const material = new THREE.MeshStandardMaterial({
-                map: colorMap,
-                normalMap: normalMap,
-                roughnessMap: roughnessMap,
-                metalnessMap: metalnessMap,
-                emissiveMap: emissiveMap,
-                emissive: 0xffffff,
-                emissiveIntensity: 0.2
-            });
+            const material = new THREE.MeshStandardMaterial({ map: colorMap, normalMap: normalMap, roughnessMap: roughnessMap, metalnessMap: metalnessMap, emissiveMap: emissiveMap, emissive: 0xffffff, emissiveIntensity: 0.2 });
             const loader = new OBJLoader();
             loader.load('assets/dragon.obj', (object) => {
                 this.threeD.dragonModel = object;
@@ -127,12 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 object.scale.multiplyScalar(10 / size);
                 object.position.sub(center);
                 this.threeD.scene.add(object);
-                this.updateDragonColor(); 
-            },
-            (xhr) => {},
-            (error) => { showThought("Oups, je n'arrive pas à apparaître...", 10, false); });
+                this.updateWorldAppearance();
+            }, (xhr) => {}, (error) => { showThought("Oups, je n'arrive pas à apparaître...", 10, false); });
         },
-        
+
         bindEvents() {
             elements.feedBtn.onclick = () => this.handleAction(this.creature.feed(), this.creature.gainXP(10));
             elements.playBtn.onclick = () => this.handleAction(this.creature.play(), this.creature.gainXP(15));
@@ -142,121 +124,67 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.askBtn.onclick = () => this.askCreature();
             elements.profileBtn.onclick = () => this.openProfile();
             elements.modalCloseBtn.onclick = () => this.closeProfile();
-            elements.colorPicker.onclick = (e) => {
-                if (e.target.classList.contains('color-btn')) { this.changeDragonColor(e.target.dataset.color); }
-            };
+            elements.colorPicker.onclick = (e) => { if (e.target.classList.contains('color-btn')) { this.changeDragonColor(e.target.dataset.color); } };
             window.addEventListener('resize', () => this.onWindowResize());
+            elements.sunIcon.onclick = () => { if (this.isNight) { this.isNight = false; this.updateWorldAppearance(); } };
+            elements.moonIcon.onclick = () => { if (!this.isNight) { this.isNight = true; this.updateWorldAppearance(); } };
         },
 
-        handleAction(thought, levelUpInfo) {
-            showThought(thought, 2);
-            if (levelUpInfo) this.announceLevelUp(levelUpInfo);
-        },
-
-        announceLevelUp({ message, skill }) {
-            setTimeout(() => {
-                showThought(message, 3);
-                if (skill) { setTimeout(() => { showThought(skill, 5); }, 3100); }
-            }, 500);
-        },
-
-        openProfile() {
-            elements.modalName.textContent = this.creature.name;
-            elements.modalLevel.textContent = this.creature.level;
-            const xpPercent = (this.creature.xp / this.creature.xpToNextLevel) * 100;
-            elements.modalXpBar.style.width = `${xpPercent}%`;
-            elements.modalXpText.textContent = `${Math.floor(this.creature.xp)} / ${this.creature.xpToNextLevel} XP`;
-            elements.modalSkills.innerHTML = '';
-            if (this.creature.skills.length === 0) {
-                elements.modalSkills.innerHTML = '<li>Aucune pour le moment</li>';
-            } else {
-                this.creature.skills.forEach(skillName => {
-                    const li = document.createElement('li');
-                    li.textContent = skillName;
-                    elements.modalSkills.appendChild(li);
-                });
-            }
-            elements.modal.classList.remove('hidden');
-        },
-
-        closeProfile() {
-            elements.modal.classList.add('hidden');
-        },
-
-        changeDragonColor(color) {
-            this.creature.color = color;
-            this.updateDragonColor();
-        },
-
-        updateDragonColor() {
-            if (!this.threeD.dragonModel) return;
-            let tintColor = 0xffffff;
-            if (this.creature.color === 'green') tintColor = 0x90ee90;
-            else if (this.creature.color === 'blue') tintColor = 0xadd8e6;
-            else if (this.creature.color === 'purple') tintColor = 0xdda0dd;
-            this.threeD.dragonModel.traverse((child) => {
-                if (child.isMesh) { child.material.color.setHex(tintColor); }
-            });
-        },
-
+        handleAction(thought, levelUpInfo) { showThought(thought, 2); if (levelUpInfo) this.announceLevelUp(levelUpInfo); },
+        announceLevelUp({ message, skill }) { setTimeout(() => { showThought(message, 3); if (skill) { setTimeout(() => { showThought(skill, 5); }, 3100); } }, 500); },
+        openProfile() { elements.modalName.textContent = this.creature.name; elements.modalLevel.textContent = this.creature.level; const xpPercent = (this.creature.xp / this.creature.xpToNextLevel) * 100; elements.modalXpBar.style.width = `${xpPercent}%`; elements.modalXpText.textContent = `${Math.floor(this.creature.xp)} / ${this.creature.xpToNextLevel} XP`; elements.modalSkills.innerHTML = ''; if (this.creature.skills.length === 0) { elements.modalSkills.innerHTML = '<li>Aucune pour le moment</li>'; } else { this.creature.skills.forEach(skillName => { const li = document.createElement('li'); li.textContent = skillName; elements.modalSkills.appendChild(li); }); } elements.modal.classList.remove('hidden'); },
+        closeProfile() { elements.modal.classList.add('hidden'); },
+        changeDragonColor(color) { this.creature.color = color; if (!this.isNight) { this.updateDragonColor(); } },
+        updateDragonColor() { if (!this.threeD.dragonModel) return; let tintColor = 0xffffff; if (this.creature.color === 'green') tintColor = 0x90ee90; else if (this.creature.color === 'blue') tintColor = 0xadd8e6; else if (this.creature.color === 'purple') tintColor = 0xdda0dd; this.threeD.dragonModel.traverse((child) => { if (child.isMesh) { child.material.color.setHex(tintColor); } }); },
         renameCreature() { const newName = prompt(`Comment veux-tu m'appeler ?`, this.creature.name); if (newName && newName.trim()) { this.creature.name = newName.trim(); showThought(`Super ! Appelle-moi ${this.creature.name} !`, 4); } },
-        
-        // --- MODIFIÉ : Utilise le nouveau cerveau ---
-        teachCreature() {
-            const key = prompt("Que veux-tu m'apprendre ?"); if (!key) return;
-            const value = prompt(`D'accord, et quelle est la réponse à "${key}" ?`); if (!value) return;
-            this.creature.knowledge[key.trim().toLowerCase()] = value.trim();
-            const thought = this.creature.brain.getResponse('learn');
-            const xpGain = this.creature.gainXP(this.creature.hasSkill("Apprentissage Rapide") ? 30 : 20);
-            this.handleAction(thought, xpGain);
-        },
+        teachCreature() { const key = prompt("Que veux-tu m'apprendre ?"); if (!key) return; const value = prompt(`D'accord, et quelle est la réponse à "${key}" ?`); if (!value) return; this.creature.knowledge[key.trim().toLowerCase()] = value.trim(); const thought = this.creature.brain.getResponse('learn'); const xpGain = this.creature.gainXP(this.creature.hasSkill("Apprentissage Rapide") ? 30 : 20); this.handleAction(thought, xpGain); },
+        askCreature() { const q = prompt("Que veux-tu me demander ?"); if (!q) return; const answer = this.creature.brain.processQuestion(q); showThought(answer, 5); },
+        onWindowResize() { const world = elements.world; this.threeD.camera.aspect = world.clientWidth / world.clientHeight; this.threeD.camera.updateProjectionMatrix(); this.threeD.renderer.setSize(world.clientWidth, world.clientHeight); },
 
-        // --- MODIFIÉ : Utilise le nouveau cerveau ---
-        askCreature() {
-            const q = prompt("Que veux-tu me demander ?"); if (!q) return;
-            const answer = this.creature.brain.processQuestion(q);
-            showThought(answer, 5);
-        },
-        
-        onWindowResize() {
-            const world = elements.world;
-            this.threeD.camera.aspect = world.clientWidth / world.clientHeight;
-            this.threeD.camera.updateProjectionMatrix();
-            this.threeD.renderer.setSize(world.clientWidth, world.clientHeight);
-        },
-
-        // --- MODIFIÉ : Gère les pensées proactives ---
         gameLoop() {
             requestAnimationFrame(this.gameLoop.bind(this));
             const deltaTime = this.clock.getDelta();
-            
             this.creature.update(deltaTime);
-            
-            // Logique pour les pensées proactives
             this.proactiveThoughtTimer -= deltaTime;
-            if (this.proactiveThoughtTimer <= 0) {
-                const thought = this.creature.brain.think();
-                if (thought) {
-                    showThought(thought, 4, false); // On ne lit pas à voix haute pour ne pas être intrusif
-                }
-                // Réinitialise le timer pour la prochaine pensée (entre 20 et 35 secondes)
-                this.proactiveThoughtTimer = 20 + Math.random() * 15;
-            }
-
-            // Animation du dragon
-            if (this.threeD.dragonModel) {
-                const elapsedTime = this.clock.getElapsedTime();
-                this.threeD.dragonModel.position.y = Math.sin(elapsedTime * 1.5) * 0.2;
-                if (this.creature.state === 'playing') {
-                     this.threeD.dragonModel.rotation.y += deltaTime * 2;
-                } else {
-                    this.threeD.dragonModel.rotation.y = THREE.MathUtils.lerp(this.threeD.dragonModel.rotation.y, 0, deltaTime * 3);
-                }
-            }
-            
+            if (this.proactiveThoughtTimer <= 0) { const thought = this.creature.brain.think(); if (thought) { showThought(thought, 4, false); } this.proactiveThoughtTimer = 20 + Math.random() * 15; }
+            if (this.threeD.dragonModel) { const elapsedTime = this.clock.getElapsedTime(); this.threeD.dragonModel.position.y = Math.sin(elapsedTime * 1.5) * 0.2; if (this.creature.state === 'playing') { this.threeD.dragonModel.rotation.y += deltaTime * 2; } else { this.threeD.dragonModel.rotation.y = THREE.MathUtils.lerp(this.threeD.dragonModel.rotation.y, 0, deltaTime * 3); } }
             this.renderUI();
-            if(this.threeD.renderer && this.threeD.scene && this.threeD.camera){
-                 this.threeD.renderer.render(this.threeD.scene, this.threeD.camera);
+            if (this.threeD.renderer && this.threeD.scene && this.threeD.camera) { this.threeD.renderer.render(this.threeD.scene, this.threeD.camera); }
+        },
+
+        updateWorldAppearance() {
+            if (!this.threeD.ambientLight || !this.threeD.directionalLight) return;
+            
+            if (this.isNight) {
+                elements.gameContainer.classList.add('night-theme');
+                elements.moonIcon.classList.remove('inactive-icon');
+                elements.sunIcon.classList.add('inactive-icon');
+                this.threeD.ambientLight.intensity = 0.1;
+                this.threeD.directionalLight.intensity = 0.8;
+                this.threeD.directionalLight.color.setHex(0xb0c4de);
+                if (this.threeD.dragonModel) {
+                    this.threeD.dragonModel.traverse(child => {
+                        if (child.isMesh) {
+                            child.material.emissiveIntensity = 0;
+                            child.material.color.setHex(0x101214);
+                        }
+                    });
+                }
+            } else {
+                elements.gameContainer.classList.remove('night-theme');
+                elements.sunIcon.classList.remove('inactive-icon');
+                elements.moonIcon.classList.add('inactive-icon');
+                this.threeD.ambientLight.intensity = 0.7;
+                this.threeD.directionalLight.intensity = 2.0;
+                this.threeD.directionalLight.color.setHex(0xffffff);
+                if (this.threeD.dragonModel) {
+                    this.updateDragonColor(); 
+                    this.threeD.dragonModel.traverse(child => {
+                        if (child.isMesh) {
+                            child.material.emissiveIntensity = 0.2;
+                        }
+                    });
+                }
             }
         },
 
