@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mon Créa-ssistant Dragon</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ... (tout le contenu du body est inchangé) ... -->
+    <div id="game-container">
+        <div id="creature-world">
+            <div id="dragon"></div>
+            <div id="thought-bubble" class="hidden"></div>
+        </div>
+        <div id="ui-container">
+            <div class="stat-bar"><img src="assets/icon_hunger.png" class="stat-icon"><div class="bar-container"><div id="hunger-bar-fill" class="bar-fill"></div></div></div>
+            <div class="stat-bar"><img src="assets/icon_happiness.png" class="stat-icon"><div class="bar-container"><div id="happiness-bar-fill" class="bar-fill"></div></div></div>
+            <div id="button-row"><button id="btn-feed" class="action-button"><img src="assets/button_feed.png"></button><button id="btn-play" class="action-button"><img src="assets/button_play.png"></button></div>
+            <div id="assistant-button-row"><button id="btn-rename" class="secondary-button">Renommer</button><button id="btn-teach" class="secondary-button">Enseigner</button><button id="btn-ask" class="secondary-button">Demander</button></div>
+        </div>
+    </div>
+
+    <!-- MODIFIÉ : On charge game.js comme un module -->
+    <script src="game.js" type="module"></script>
+</body>
+</html>
