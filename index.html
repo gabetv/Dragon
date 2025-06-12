@@ -7,21 +7,72 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- ... (tout le contenu du body est inchangé) ... -->
+
+    <!-- FENÊTRE MODALE DU PROFIL (cachée par défaut) -->
+    <div id="profile-modal" class="modal-container hidden">
+        <div class="modal-content">
+            <h2 id="modal-dragon-name">Nom du Dragon</h2>
+            <p>Niveau : <span id="modal-level">1</span></p>
+            <div class="xp-bar-container">
+                <div id="modal-xp-bar-fill"></div>
+                <span id="modal-xp-text">0 / 100 XP</span>
+            </div>
+            <h3>Compétences</h3>
+            <ul id="modal-skills-list">
+                <!-- La liste sera remplie par JavaScript -->
+            </ul>
+            <h3>Personnalisation</h3>
+            <div id="color-picker">
+                <button class="color-btn" data-color="default" title="Original"></button>
+                <button class="color-btn" data-color="green" title="Vert"></button>
+                <button class="color-btn" data-color="blue" title="Bleu"></button>
+                <button class="color-btn" data-color="purple" title="Violet"></button>
+            </div>
+            <button id="modal-close-btn" class="secondary-button">Fermer</button>
+        </div>
+    </div>
+
+    <!-- CONTENEUR PRINCIPAL DU JEU -->
     <div id="game-container">
         <div id="creature-world">
             <div id="dragon"></div>
             <div id="thought-bubble" class="hidden"></div>
         </div>
+
         <div id="ui-container">
-            <div class="stat-bar"><img src="assets/icon_hunger.png" class="stat-icon"><div class="bar-container"><div id="hunger-bar-fill" class="bar-fill"></div></div></div>
-            <div class="stat-bar"><img src="assets/icon_happiness.png" class="stat-icon"><div class="bar-container"><div id="happiness-bar-fill" class="bar-fill"></div></div></div>
-            <div id="button-row"><button id="btn-feed" class="action-button"><img src="assets/button_feed.png"></button><button id="btn-play" class="action-button"><img src="assets/button_play.png"></button></div>
-            <div id="assistant-button-row"><button id="btn-rename" class="secondary-button">Renommer</button><button id="btn-teach" class="secondary-button">Enseigner</button><button id="btn-ask" class="secondary-button">Demander</button></div>
+            <!-- Barres de stats -->
+            <div class="stat-bar">
+                <img src="assets/icon_hunger.png" class="stat-icon">
+                <div class="bar-container">
+                    <div id="hunger-bar-fill" class="bar-fill"></div>
+                </div>
+            </div>
+            <div class="stat-bar">
+                <img src="assets/icon_happiness.png" class="stat-icon">
+                <div class="bar-container">
+                    <div id="happiness-bar-fill" class="bar-fill"></div>
+                </div>
+            </div>
+
+            <!-- Boutons d'action principaux -->
+            <div id="button-row">
+                <button id="btn-feed" class="action-button"><img src="assets/button_feed.png"></button>
+                <button id="btn-play" class="action-button"><img src="assets/button_play.png"></button>
+            </div>
+
+            <!-- Boutons de l'assistant -->
+            <div id="assistant-button-row">
+                <button id="btn-rename" class="secondary-button">Renommer</button>
+                <button id="btn-teach" class="secondary-button">Enseigner</button>
+                <button id="btn-ask" class="secondary-button">Demander</button>
+            </div>
+            
+            <!-- Bouton pour ouvrir le profil -->
+            <button id="btn-profile" class="profile-button">Profil</button>
         </div>
     </div>
-
-    <!-- MODIFIÉ : On charge game.js comme un module -->
+    
+    <!-- On charge le script comme un module -->
     <script src="game.js" type="module"></script>
 </body>
 </html>
