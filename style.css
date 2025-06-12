@@ -37,11 +37,8 @@ body {
     align-items: center;
     position: relative;
     min-height: 0;
-    /* Permet au canvas 3D de ne pas déborder */
     overflow: hidden; 
 }
-
-/* Les styles pour #dragon et @keyframes float ont été supprimés */
 
 /* Conteneur de l'UI */
 #ui-container {
@@ -50,155 +47,95 @@ body {
     box-sizing: border-box;
     background-color: rgba(0, 0, 0, 0.1);
     border-top: 2px solid rgba(255, 255, 255, 0.2);
-    position: relative; /* Pour positionner le bouton profil */
+    position: relative; 
+    /* Transition douce pour le redimensionnement */
+    transition: padding 0.3s ease;
 }
 
 /* Barres de stats */
-.stat-bar { display: flex; align-items: center; margin-bottom: 15px; }
-.stat-icon { width: 40px; height: 40px; margin-right: 10px; }
-.bar-container { flex-grow: 1; height: 30px; background-image: url('assets/bar_background.png'); background-size: 100% 100%; border-radius: 15px; overflow: hidden; padding: 4px; box-sizing: border-box; }
+.stat-bar { display: flex; align-items: center; margin-bottom: 15px; transition: margin-bottom 0.3s ease; }
+.stat-icon { width: 40px; height: 40px; margin-right: 10px; transition: width 0.3s ease, height 0.3s ease; }
+.bar-container { flex-grow: 1; height: 30px; background-image: url('assets/bar_background.png'); background-size: 100% 100%; border-radius: 15px; overflow: hidden; padding: 4px; box-sizing: border-box; transition: height 0.3s ease; }
 .bar-fill { height: 100%; width: 100%; border-radius: 10px; transition: width 0.5s ease-out; }
 #hunger-bar-fill { background-image: url('assets/bar_fill_hunger.png'); background-size: auto 100%; }
 #happiness-bar-fill { background-image: url('assets/bar_fill_happiness.png'); background-size: auto 100%; }
 
 /* Boutons d'action */
-#button-row { display: flex; justify-content: space-around; margin-top: 10px; }
+#button-row { display: flex; justify-content: space-around; margin-top: 10px; transition: margin-top 0.3s ease; }
 .action-button { background: none; border: none; padding: 0; cursor: pointer; }
-.action-button img { width: 80px; height: 80px; transition: transform 0.1s ease; }
+.action-button img { width: 80px; height: 80px; transition: width 0.3s ease, height 0.3s ease, transform 0.1s ease; }
 .action-button:active img { transform: scale(0.9); }
 
 /* Bulle de pensée */
-#thought-bubble { position: absolute; top: 10%; /* Ajusté pour la vue 3D */ background-color: rgba(255, 255, 255, 0.95); padding: 12px 20px; border-radius: 25px; border-bottom-left-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); font-size: 18px; color: #444; max-width: 80%; text-align: center; opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; pointer-events: none; z-index: 5; /* S'assure qu'elle est au-dessus du canvas */ }
+#thought-bubble { position: absolute; top: 10%; background-color: rgba(255, 255, 255, 0.95); padding: 12px 20px; border-radius: 25px; border-bottom-left-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); font-size: 18px; color: #444; max-width: 80%; text-align: center; opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; pointer-events: none; z-index: 5; }
 #thought-bubble.visible { opacity: 1; transform: translateY(0); }
 .hidden { display: none !important; }
 
 /* Boutons secondaires */
-#assistant-button-row { display: flex; justify-content: space-around; margin-top: 15px; }
-.secondary-button { background-color: rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 10px; padding: 8px 12px; font-family: 'Fredoka', sans-serif; font-size: 14px; color: #444; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
+#assistant-button-row { display: flex; justify-content: space-around; margin-top: 15px; transition: margin-top 0.3s ease; }
+.secondary-button { background-color: rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 10px; padding: 8px 12px; font-family: 'Fredoka', sans-serif; font-size: 14px; color: #444; cursor: pointer; transition: all 0.2s; }
 .secondary-button:hover { background-color: rgba(255, 255, 255, 0.9); }
 .secondary-button:active { transform: scale(0.95); }
 
-/* --- Styles pour le Modal de Profil --- */
-.profile-button {
-    position: absolute;
-    top: -25px; /* Positionné à moitié sur l'UI */
-    right: 20px;
-    background-color: #f39c12;
-    color: white;
-    border: 3px solid white;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    font-size: 12px;
-    font-weight: bold;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    cursor: pointer;
-    z-index: 10;
-}
-
-.modal-container {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.modal-container:not(.hidden) {
-    opacity: 1;
-}
-
-.modal-content {
-    background: #fdfdfd;
-    padding: 25px;
-    border-radius: 15px;
-    width: 85%;
-    max-width: 350px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    color: #333;
-    text-align: center;
-    font-family: 'Fredoka', sans-serif;
-}
-
-.modal-content h2, .modal-content h3 {
-    margin: 0 0 10px 0;
-    color: #555;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 5px;
-}
-
-.modal-content h3 {
-    margin-top: 20px;
-}
-
-.xp-bar-container {
-    width: 100%;
-    height: 25px;
-    background-color: #e0e0e0;
-    border-radius: 12.5px;
-    position: relative;
-    margin: 10px 0;
-    overflow: hidden;
-}
-
-#modal-xp-bar-fill {
-    height: 100%;
-    width: 0%; /* Sera modifié par JS */
-    background: linear-gradient(90deg, #4caf50, #81c784);
-    border-radius: 12.5px;
-    transition: width 0.5s ease;
-}
-
-#modal-xp-text {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    color: #fff;
-    font-weight: bold;
-    font-size: 14px;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-}
-
-#modal-skills-list {
-    list-style: none;
-    padding: 0;
-    margin: 10px 0 20px 0;
-    color: #666;
-}
-
-#color-picker {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin: 15px 0;
-}
-
-.color-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid #ddd;
-    cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    transition: transform 0.2s;
-}
-.color-btn:hover {
-    transform: scale(1.1);
-}
-
-/* Couleurs des boutons */
-.color-btn[data-color="default"] { background-color: #e67e22; } /* Orange original */
+/* Styles pour le Modal de Profil (inchangés) */
+.profile-button { position: absolute; top: -25px; right: 20px; background-color: #f39c12; color: white; border: 3px solid white; border-radius: 50%; width: 50px; height: 50px; font-size: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; z-index: 10; }
+.modal-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 100; opacity: 0; transition: opacity 0.3s ease; }
+.modal-container:not(.hidden) { opacity: 1; }
+.modal-content { background: #fdfdfd; padding: 25px; border-radius: 15px; width: 85%; max-width: 350px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); color: #333; text-align: center; font-family: 'Fredoka', sans-serif; }
+.modal-content h2, .modal-content h3 { margin: 0 0 10px 0; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+.modal-content h3 { margin-top: 20px; }
+.xp-bar-container { width: 100%; height: 25px; background-color: #e0e0e0; border-radius: 12.5px; position: relative; margin: 10px 0; overflow: hidden; }
+#modal-xp-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #4caf50, #81c784); border-radius: 12.5px; transition: width 0.5s ease; }
+#modal-xp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+#modal-skills-list { list-style: none; padding: 0; margin: 10px 0 20px 0; color: #666; }
+#color-picker { display: flex; justify-content: center; gap: 15px; margin: 15px 0; }
+.color-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ddd; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.2s; }
+.color-btn:hover { transform: scale(1.1); }
+.color-btn[data-color="default"] { background-color: #e67e22; }
 .color-btn[data-color="green"] { background-color: #2ecc71; }
 .color-btn[data-color="blue"] { background-color: #3498db; }
 .color-btn[data-color="purple"] { background-color: #9b59b6; }
+#modal-close-btn { margin-top: 20px; width: 100%; }
 
-#modal-close-btn {
-    margin-top: 20px;
-    width: 100%;
+
+/* ========================================================== */
+/* --- NOUVEAU : Styles pour les écrans mobiles plus courts --- */
+/* ========================================================== */
+
+/* Ces règles s'appliquent si la hauteur de l'écran est de 700px ou moins */
+@media (max-height: 700px) {
+    /* On réduit l'espacement général de l'interface */
+    #ui-container {
+        padding: 10px 20px; /* Moins d'espace en haut et en bas */
+    }
+
+    /* On réduit la taille des barres de stats */
+    .stat-bar {
+        margin-bottom: 8px; /* Était 15px */
+    }
+    .stat-icon {
+        width: 30px;  /* Était 40px */
+        height: 30px; /* Était 40px */
+    }
+    .bar-container {
+        height: 24px; /* Était 30px */
+    }
+
+    /* On réduit la taille des gros boutons d'action */
+    #button-row {
+        margin-top: 5px; /* Était 10px */
+    }
+    .action-button img {
+        width: 60px;  /* Était 80px */
+        height: 60px; /* Était 80px */
+    }
+
+    /* On réduit la taille des boutons secondaires */
+    #assistant-button-row {
+        margin-top: 10px; /* Était 15px */
+    }
+    .secondary-button {
+        padding: 5px 10px;  /* Était 8px 12px */
+        font-size: 13px;    /* Était 14px */
+    }
 }
